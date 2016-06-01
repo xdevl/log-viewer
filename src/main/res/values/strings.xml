@@ -35,7 +35,7 @@
 
     <string name="msg_no_logs">No logs to display</string>
 
-    <string name="msg_copyright"></string>
+    <string name="msg_copyright">%1d</string>
 
     <string-array name="filters">
         <item>Error</item>

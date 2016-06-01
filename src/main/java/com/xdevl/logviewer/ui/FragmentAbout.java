@@ -28,6 +28,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import com.xdevl.logviewer.R;
+import org.w3c.dom.Text;
+
+import java.util.Calendar;
 
 public class FragmentAbout extends Fragment
 {
@@ -41,11 +44,12 @@ public class FragmentAbout extends Fragment
 		try {
 			PackageInfo info=getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(),0) ;
 			this.<TextView>findViewById(rootView,R.id.app_version).setText(info.versionName) ;
+			this.<TextView>findViewById(rootView,R.id.copyright).setText(getString(R.string.msg_copyright,Calendar.getInstance().get(Calendar.YEAR))) ;
 		} catch(PackageManager.NameNotFoundException e) {}
 		return rootView ;
 	}
 
-	protected <T> T findViewById(View view, int id)
+	protected <T extends View> T findViewById(View view, int id)
 	{
 		return (T)view.findViewById(id) ;
 	}
