@@ -34,7 +34,7 @@
     <string name="label_filter">Filtering</string>
 
     <string name="msg_no_logs">No logs to display</string>
-
+    <string name="msg_root_required">Root permission is required in order to read logs</string>
     <string name="msg_copyright">%1d</string>
 
     <string-array name="filters">

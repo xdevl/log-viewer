@@ -80,7 +80,8 @@ public class FragmentLogs extends Fragment implements DialogInterface.OnMultiCho
 			mAllLogs=getArguments().getInt(ARGUMENT_TYPE,ADB_LOGS)==ADB_LOGS?
 					Model.getLogCat(getContext()):Model.getDmesg() ;
 		} catch (IOException e) {
-			e.printStackTrace();
+			// If we get an exception we always assume su permission hasn't been granted
+			mEmptyView.setText(R.string.msg_root_required) ;
 		}
 
 		update(mAllLogs) ;

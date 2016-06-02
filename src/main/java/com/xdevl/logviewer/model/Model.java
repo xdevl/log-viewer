@@ -22,6 +22,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import com.xdevl.logviewer.bean.Log;
+import com.xdevl.logviewer.bean.ProcessInputStream;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -54,8 +55,7 @@ public class Model
     {
         ProcessBuilder builder=new ProcessBuilder(args) ;
         builder.redirectErrorStream(true) ;
-        Process process=builder.start() ;
-        return process.getInputStream() ;
+        return new ProcessInputStream(builder.start()) ;
     }
 
     private static InputStream runRootCommand(String ...args) throws IOException
