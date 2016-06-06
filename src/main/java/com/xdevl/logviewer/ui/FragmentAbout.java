@@ -28,7 +28,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import com.xdevl.logviewer.R;
-import org.w3c.dom.Text;
 
 import java.util.Calendar;
 

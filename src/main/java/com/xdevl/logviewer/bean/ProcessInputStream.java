@@ -23,11 +23,13 @@ import java.io.InputStream;
 
 public class ProcessInputStream extends InputStream
 {
+    private final boolean mEndless ;
     private final Process mProcess ;
     private final InputStream mInputStream ;
 
-    public ProcessInputStream(Process process) throws IOException
+    public ProcessInputStream(boolean endless, Process process) throws IOException
     {
+        mEndless=endless ;
         mProcess=process ;
         mInputStream=process.getInputStream() ;
         if(mInputStream==null)
@@ -41,7 +43,7 @@ public class ProcessInputStream extends InputStream
     }
 
     @Override
-    public int read(byte[] buffer,int byteOffset,int byteCount) throws IOException
+    public int read(byte[] buffer, int byteOffset, int byteCount) throws IOException
     {
         return mInputStream.read(buffer,byteOffset,byteCount) ;
     }
@@ -56,10 +58,12 @@ public class ProcessInputStream extends InputStream
     public void close() throws IOException
     {
         mInputStream.close() ;
+        if(mEndless)
+            mProcess.destroy() ;
         try {
             int exitValue=mProcess.waitFor() ;
-            if(exitValue!=0)
-                throw new IOException("Process exited with value: "+exitValue) ;
+            if(exitValue!=0 && !mEndless)
+                throw new IOException("Process exited with value: "+exitValue);
         } catch(InterruptedException e) {
             throw new IOException(e) ;
         }

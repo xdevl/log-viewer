@@ -22,17 +22,22 @@ public class Log
 {
 	public enum Severity
 	{
-		INFO,WARNING,ERROR,DEBUGGING ;
+		INFO,WARNING,ERROR,DEBUGGING
 	}
 
-	public long mId ;
-	public Severity mSeverity ;
-	public String mContent ;
+	public final Severity mSeverity ;
+	public final String mContent ;
+	public boolean mMatch=false ;
 
-	public Log(long id,Severity severity,String content)
+	public Log(Severity severity,String content)
 	{
-		mId=id ;
 		mSeverity=severity ;
 		mContent=content ;
 	}
+
+	public void setMatch(String match)
+	{
+		mMatch=match!=null && mContent.toLowerCase().contains(match.toLowerCase()) ;
+	}
+
 }

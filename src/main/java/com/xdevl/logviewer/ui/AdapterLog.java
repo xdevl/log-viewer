@@ -27,15 +27,21 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import com.xdevl.logviewer.bean.Log;
 import com.xdevl.logviewer.R;
+import com.xdevl.logviewer.bean.Log;
+import com.xdevl.logviewer.model.LogReader;
 
+import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
-public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder>
+public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder> implements LogReader.OnLogParsedListener
 {
-	private List<Log> mLogs ;
-	private String mHighlight ;
+	public final int mId ;
+	private final int mSize ;
+	private List<Log> mAllLogs, mFilteredLogs ;
+	private EnumSet<Log.Severity> mFilters=EnumSet.allOf(Log.Severity.class) ;
+	private String mSearch ;
 
 	static class ViewHolder extends RecyclerView.ViewHolder
 	{
@@ -47,7 +53,7 @@ public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder>
 			mContent=(TextView)itemView.findViewById(R.id.content) ;
 		}
 
-		public void setLog(Log log,String highlight)
+		public void setLog(Log log, String highlight)
 		{
 			Spannable content=new SpannableString(log.mContent) ;
 			int matchingIndex=0 ;
@@ -78,22 +84,25 @@ public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder>
 		}
 	}
 
-	public AdapterLog(List<Log> logs)
+	public AdapterLog(int id, int size)
 	{
-		mLogs=logs ;
+		mId=id ;
+		mSize=size ;
+		mAllLogs=new ArrayList<>() ;
+		mFilteredLogs=new ArrayList<>() ;
 	}
 	
 	@Override
 	public int getItemCount()
 	{
-		return mLogs.size() ;
+		return mFilteredLogs.size() ;
 	}
 
 	@Override
 	public void onBindViewHolder(ViewHolder holder, int position)
 	{
-		Log logEntry=mLogs.get(position) ;
-		holder.setLog(logEntry,mHighlight) ;
+		Log logEntry=mFilteredLogs.get(position) ;
+		holder.setLog(logEntry,mSearch) ;
 	}
 
 	@Override
@@ -103,14 +112,70 @@ public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder>
 		return new ViewHolder(view) ;
 	}
 
-	public List<Log> getLogEntries()
+	@Override
+	public void onLogParsed(Log log)
 	{
-		return mLogs ;
+		log.setMatch(mSearch) ;
+		mAllLogs.add(log) ;
+		if(isFiltered(log))
+		{
+			mFilteredLogs.add(log);
+			notifyItemInserted(mFilteredLogs.size()-1);
+		}
+		if(mAllLogs.size()>mSize && isFiltered(mAllLogs.remove(0)))
+		{
+			mFilteredLogs.remove(0) ;
+			notifyItemRemoved(0) ;
+		}
 	}
 
-	public void setHighliht(String highlight)
+	protected boolean isFiltered(Log log)
 	{
-		mHighlight=highlight ;
+		return mFilters==null || mFilters.contains(log.mSeverity) ;
+	}
+
+	public void filter(EnumSet<Log.Severity> filters)
+	{
+		mFilters=filters ;
+		mFilteredLogs.clear() ;
+		for(Log log: mAllLogs)
+			if(isFiltered(log))
+				mFilteredLogs.add(log) ;
+		notifyDataSetChanged() ;
+	}
+
+	public EnumSet<Log.Severity> getFilters()
+	{
+		return mFilters ;
+	}
+
+	public boolean search(String search)
+	{
+		if(search==mSearch || (search!=null && search.equals(mSearch)))
+			return false ;
+
+		mSearch=search ;
+		for(Log log: mAllLogs)
+			log.setMatch(mSearch) ;
+		return true ;
+	}
+
+	public int getNextMatchingPosition(int position, boolean next)
+	{
+		if(mFilteredLogs.isEmpty())
+			return 0 ;
+		else if(mSearch==null)
+			return next?mFilteredLogs.size()-1:0 ;
+
+		int step=next?1:-1, i=position ;
+		do {
+			i+=step ;
+			if(i>=mFilteredLogs.size())
+				i=0 ;
+			else if(i<0)
+				i=mFilteredLogs.size()-1 ;
+		} while(!mFilteredLogs.get(i).mMatch && i!=position) ;
+		return i ;
 	}
 }
 	

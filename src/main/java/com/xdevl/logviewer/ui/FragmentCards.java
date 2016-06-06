@@ -63,9 +63,9 @@ public class FragmentCards extends Fragment implements AdapterCard.OnCardSelecte
 	public void onCardSelected(Card card)
 	{
 		if(card.mId==ID_LOGCAT)
-			((Activity)getActivity()).displayFragment(FragmentLogs.createFragment(FragmentLogs.ADB_LOGS)) ;
+			((Activity)getActivity()).displayFragment(FragmentLogs.createFragment(FragmentState.AdapterType.LOGCAT.name())) ;
 		else if(card.mId==ID_DMESG)
-			((Activity)getActivity()).displayFragment(FragmentLogs.createFragment(FragmentLogs.KERNEL_LOGS)) ;
+			((Activity)getActivity()).displayFragment(FragmentLogs.createFragment(FragmentState.AdapterType.DMESG.name())) ;
 		else if(card.mId==ID_ABOUT)
 			((Activity)getActivity()).displayFragment(new FragmentAbout()) ;
 	}

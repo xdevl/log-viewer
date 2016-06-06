@@ -37,11 +37,12 @@
     <string name="msg_root_required">Root permission is required in order to read logs</string>
     <string name="msg_copyright">%1d</string>
 
+    <!-- The order need to match the order enum values declaration in Log.java -->
     <string-array name="filters">
+        <item>Info</item>
+        <item>Warning</item>
         <item>Error</item>
         <item>Debug</item>
-        <item>Warning</item>
-        <item>Info</item>
     </string-array>
 
 </resources>

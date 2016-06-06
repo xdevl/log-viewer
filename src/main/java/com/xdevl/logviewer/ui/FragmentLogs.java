@@ -32,32 +32,27 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 import com.xdevl.logviewer.R;
 import com.xdevl.logviewer.bean.Log;
-import com.xdevl.logviewer.model.Model;
+import com.xdevl.logviewer.model.LogReader;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.EnumSet;
 
-public class FragmentLogs extends Fragment implements DialogInterface.OnMultiChoiceClickListener, DialogInterface.OnClickListener,
+public class FragmentLogs extends Fragment implements LogReader.OnErrorListener, DialogInterface.OnMultiChoiceClickListener, DialogInterface.OnClickListener,
 		SearchView.OnQueryTextListener, MenuItemCompat.OnActionExpandListener
 {
-	public static final int ADB_LOGS=0 ;
-	public static final int KERNEL_LOGS=1 ;
-
 	private static final String ARGUMENT_TYPE=FragmentLogs.class.getName()+".ARGUMENT_TYPE" ;
+	private static final String ADAPTER_ID=FragmentLogs.class.getName()+".ADAPTER_ID" ;
 
+	private FragmentState mFragmentState ;
+	private boolean mSavedInstance=false ;
+	private AdapterLog mAdapter ;
 	private RecyclerView mRecyclerView ;
 	private TextView mEmptyView ;
-	private List<Log> mAllLogs ;
-	// In order: info, error, warning and debug
-	private boolean mFilters[]={true,true,true,true}, mTmpFilters[]=new boolean[mFilters.length] ;
-	private String mSearch=null ;
-	private List<Integer> mMatchingPositions=new ArrayList<Integer>() ;
+	private boolean mFilters[]=new boolean[Log.Severity.values().length] ;
 
-	public static FragmentLogs createFragment(int type)
+	public static FragmentLogs createFragment(String type)
 	{
 		Bundle bundle=new Bundle() ;
-		bundle.putInt(ARGUMENT_TYPE,type) ;
+		bundle.putString(ARGUMENT_TYPE,type) ;
 		FragmentLogs fragment=new FragmentLogs() ;
 		fragment.setArguments(bundle) ;
 		return fragment ;
@@ -68,33 +63,58 @@ public class FragmentLogs extends Fragment implements DialogInterface.OnMultiCho
 	public View onCreateView(LayoutInflater inflater,@Nullable ViewGroup container,@Nullable Bundle savedInstanceState)
 	{
 		View view=inflater.inflate(R.layout.fragment_logs,null) ;
-		((Activity)getActivity()).setTitle(getString(getArguments().getInt(ARGUMENT_TYPE,ADB_LOGS)==ADB_LOGS?
+		FragmentState.AdapterType type=FragmentState.AdapterType.valueOf(getArguments().getString(ARGUMENT_TYPE)) ;
+		((Activity)getActivity()).setTitle(getString(type==FragmentState.AdapterType.LOGCAT?
 				R.string.title_logcat:R.string.title_dmesg),true) ;
 		setHasOptionsMenu(true) ;
+		mFragmentState=FragmentState.getInstance(getFragmentManager()) ;
 		mRecyclerView=(RecyclerView)view.findViewById(R.id.logs) ;
 		mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity())) ;
+		// Animations don't seem to work well when inserting and removing elements simultaneously :/
+		mRecyclerView.setItemAnimator(null) ;
+
+		if(savedInstanceState!=null && savedInstanceState.containsKey(ADAPTER_ID))
+			mAdapter=mFragmentState.getAdapter(savedInstanceState.getInt(ADAPTER_ID)) ;
+		else mAdapter=mFragmentState.getAdapter(getContext(),type) ;
+		mRecyclerView.setAdapter(mAdapter) ;
+		mFragmentState.registerErrorListener(mAdapter.mId,this) ;
+
 		mEmptyView=(TextView)view.findViewById(R.id.empty_view) ;
 
-		try {
-			// TODO: log fetching and parsing should be done in a dedicated thread
-			mAllLogs=getArguments().getInt(ARGUMENT_TYPE,ADB_LOGS)==ADB_LOGS?
-					Model.getLogCat(getContext()):Model.getDmesg() ;
-		} catch (IOException e) {
-			// If we get an exception we always assume su permission hasn't been granted
-			mEmptyView.setText(R.string.msg_root_required) ;
-		}
-
-		update(mAllLogs) ;
-
 		return view;
+	}
+
+	@Override
+	public void onResume()
+	{
+		super.onResume() ;
+		mSavedInstance=false ;
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle outState)
+	{
+		super.onSaveInstanceState(outState) ;
+		outState.putInt(ADAPTER_ID,mAdapter.mId) ;
+		mSavedInstance=true ;
+	}
+
+	@Override
+	public void onDestroyView()
+	{
+		super.onStop() ;
+		mFragmentState.registerErrorListener(mAdapter.mId,null) ;
+		// Freeing those resources could be triggered from the activity instead of tracking
+		// the fragment saved instance state
+		if(!mSavedInstance)
+			mFragmentState.releaseAdapter(mAdapter.mId) ;
 	}
 
 	@Override
 	public void onCreateOptionsMenu(Menu menu,MenuInflater inflater)
 	{
 		super.onCreateOptionsMenu(menu,inflater) ;
-		if(mAllLogs!=null && !mAllLogs.isEmpty())
-			inflater.inflate(R.menu.logs,menu) ;
+		inflater.inflate(R.menu.logs,menu) ;
 	}
 
 	@Override
@@ -109,10 +129,11 @@ public class FragmentLogs extends Fragment implements DialogInterface.OnMultiCho
 				scrollToNextMatch() ;
 				break;
 			case R.id.action_filter:
-				System.arraycopy(mFilters,0,mTmpFilters,0,mFilters.length) ;
+				for(Log.Severity severity: Log.Severity.values())
+					mFilters[severity.ordinal()]=mAdapter.getFilters().contains(severity) ;
 				AlertDialog.Builder builder=new AlertDialog.Builder(getActivity()) ;
 				builder.setTitle(R.string.label_filter)
-						.setMultiChoiceItems(R.array.filters,mTmpFilters,this)
+						.setMultiChoiceItems(R.array.filters,mFilters,this)
 						.setPositiveButton(android.R.string.ok,this).create().show() ;
 				break ;
 			case R.id.action_search:
@@ -127,64 +148,16 @@ public class FragmentLogs extends Fragment implements DialogInterface.OnMultiCho
 		return true ;
 	}
 
-	public void update(List<Log> entries)
-	{
-		mRecyclerView.setAdapter(new AdapterLog(entries)) ;
-		boolean isEmpty=entries==null || entries.isEmpty() ;
-		mRecyclerView.setVisibility(isEmpty?View.GONE:View.VISIBLE) ;
-		mEmptyView.setVisibility(isEmpty?View.VISIBLE:View.GONE) ;
-	}
-
-	public void filterLogs()
-	{
-		List<Log> filteredLogEntries=new ArrayList<Log>() ;
-
-		for(Log logEntry: mAllLogs)
-			if(mFilters[getSeverityIndex(logEntry.mSeverity)])
-				filteredLogEntries.add(logEntry) ;
-		update(filteredLogEntries) ;
-		if(mSearch!=null && !mSearch.isEmpty())
-			searchLogs(mSearch) ;
-	}
-
-	public void searchLogs(String search)
-	{
-		mSearch=search ;
-		AdapterLog adapter=(AdapterLog)mRecyclerView.getAdapter() ;
-		adapter.setHighliht(mSearch) ;
-		mMatchingPositions.clear() ;
-
-		int position=0 ;
-		for(Log logEntry: adapter.getLogEntries())
-		{
-			if(logEntry.mContent.toLowerCase().contains(search.toLowerCase()))
-			{
-				if(mMatchingPositions.isEmpty())
-				{
-					mRecyclerView.scrollToPosition(position) ;
-					refresh() ;
-				}
-				mMatchingPositions.add(position) ;
-			}
-
-			++position ;
-		}
-	}
-
 	public void scrollToNextMatch()
 	{
-		int match,from=((LinearLayoutManager)mRecyclerView.getLayoutManager()).findLastCompletelyVisibleItemPosition() ;
-		for(match=0;match<mMatchingPositions.size() && mMatchingPositions.get(match)<=from;++match) ;
-		mRecyclerView.scrollToPosition(match==mMatchingPositions.size()?
-				(mMatchingPositions.isEmpty()?mRecyclerView.getAdapter().getItemCount()-1:mMatchingPositions.get(0)):mMatchingPositions.get(match)) ;
+		mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(((LinearLayoutManager)mRecyclerView.getLayoutManager())
+				.findLastCompletelyVisibleItemPosition(),true)) ;
 	}
 
 	public void scrollToPreviousMatch()
 	{
-		int match,from=((LinearLayoutManager)mRecyclerView.getLayoutManager()).findFirstCompletelyVisibleItemPosition() ;
-		for(match=mMatchingPositions.size()-1;match>=0 && mMatchingPositions.get(match)>=from;--match) ;
-		mRecyclerView.scrollToPosition(match<0?
-				(mMatchingPositions.isEmpty()?0:mMatchingPositions.get(mMatchingPositions.size()-1)):mMatchingPositions.get(match)) ;
+		mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(((LinearLayoutManager)mRecyclerView.getLayoutManager())
+				.findFirstCompletelyVisibleItemPosition(),false)) ;
 	}
 
 	public void refresh()
@@ -194,21 +167,6 @@ public class FragmentLogs extends Fragment implements DialogInterface.OnMultiCho
 		mRecyclerView.getAdapter().notifyItemRangeChanged(firstVisible,lastVisible-firstVisible) ;
 	}
 
-	private int getSeverityIndex(Log.Severity severity)
-	{
-		switch(severity)
-		{
-			case ERROR:
-				return 0 ;
-			case DEBUGGING:
-				return 1 ;
-			case WARNING:
-				return 2 ;
-			default:
-				return 3 ;
-		}
-	}
-
 	// If this listener isn't passed to the dialog builder, tmpFilters doesn't get updated
 	@Override
 	public void onClick(DialogInterface dialog, int which, boolean isChecked) {}
@@ -216,17 +174,23 @@ public class FragmentLogs extends Fragment implements DialogInterface.OnMultiCho
 	@Override
 	public void onClick(DialogInterface dialog, int which)
 	{
-		System.arraycopy(mTmpFilters,0,mFilters,0,mFilters.length) ;
-		filterLogs() ;
+		EnumSet<Log.Severity> filters=EnumSet.noneOf(Log.Severity.class) ;
+		for(Log.Severity severity: Log.Severity.values())
+			if(mFilters[severity.ordinal()])
+				filters.add(severity) ;
+		mAdapter.filter(filters) ;
 	}
 
 	@Override
 	public boolean onQueryTextSubmit(String query)
 	{
-		if(mSearch==null || mSearch.compareTo(query)!=0)
-			searchLogs(query) ;
+		if(mAdapter.search(query))
+		{
+			mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(((LinearLayoutManager)mRecyclerView.getLayoutManager())
+					.findFirstCompletelyVisibleItemPosition(),true)) ;
+			refresh() ;
+		}
 		else scrollToNextMatch() ;
-
 		return true ;
 	}
 
@@ -245,9 +209,16 @@ public class FragmentLogs extends Fragment implements DialogInterface.OnMultiCho
 	@Override
 	public boolean onMenuItemActionCollapse(MenuItem item)
 	{
-		((AdapterLog)mRecyclerView.getAdapter()).setHighliht(null) ;
-		mMatchingPositions.clear() ;
+		mAdapter.search(null) ;
 		refresh() ;
 		return true ;
+	}
+
+	@Override
+	public void onError(Exception exception)
+	{
+		mRecyclerView.setVisibility(View.GONE) ;
+		mEmptyView.setVisibility(View.VISIBLE) ;
+		mEmptyView.setText(R.string.msg_root_required) ;
 	}
 }
