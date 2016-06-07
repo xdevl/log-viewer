@@ -45,6 +45,7 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 	private FragmentState mFragmentState ;
 	private boolean mSavedInstance=false ;
 	private AdapterLog mAdapter ;
+	private LinearLayoutManager mLayoutManager ;
 	private RecyclerView mRecyclerView ;
 	private TextView mEmptyView ;
 	private boolean mFilters[]=new boolean[Log.Severity.values().length] ;
@@ -69,7 +70,8 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 		setHasOptionsMenu(true) ;
 		mFragmentState=FragmentState.getInstance(getFragmentManager()) ;
 		mRecyclerView=(RecyclerView)view.findViewById(R.id.logs) ;
-		mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity())) ;
+		mLayoutManager=new LinearLayoutManager(getActivity(),LinearLayoutManager.VERTICAL,true) ;
+		mRecyclerView.setLayoutManager(mLayoutManager) ;
 		// Animations don't seem to work well when inserting and removing elements simultaneously :/
 		mRecyclerView.setItemAnimator(null) ;
 
@@ -150,21 +152,22 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 
 	public void scrollToNextMatch()
 	{
-		mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(((LinearLayoutManager)mRecyclerView.getLayoutManager())
-				.findLastCompletelyVisibleItemPosition(),true)) ;
+		mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(
+				mLayoutManager.findFirstCompletelyVisibleItemPosition(),true)) ;
+		refresh() ;
 	}
 
 	public void scrollToPreviousMatch()
 	{
-		mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(((LinearLayoutManager)mRecyclerView.getLayoutManager())
-				.findFirstCompletelyVisibleItemPosition(),false)) ;
+		mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(
+				mLayoutManager.findLastCompletelyVisibleItemPosition(),false)) ;
+		refresh() ;
 	}
 
 	public void refresh()
 	{
-		LinearLayoutManager layoutManager=(LinearLayoutManager)mRecyclerView.getLayoutManager() ;
-		int firstVisible=layoutManager.findFirstVisibleItemPosition(),lastVisible=layoutManager.findLastVisibleItemPosition() ;
-		mRecyclerView.getAdapter().notifyItemRangeChanged(firstVisible,lastVisible-firstVisible) ;
+		int firstVisible=mLayoutManager.findFirstVisibleItemPosition(),lastVisible=mLayoutManager.findLastVisibleItemPosition() ;
+		mRecyclerView.getAdapter().notifyItemRangeChanged(firstVisible,lastVisible-firstVisible+1) ;
 	}
 
 	// If this listener isn't passed to the dialog builder, tmpFilters doesn't get updated
@@ -186,8 +189,7 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 	{
 		if(mAdapter.search(query))
 		{
-			mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(((LinearLayoutManager)mRecyclerView.getLayoutManager())
-					.findFirstCompletelyVisibleItemPosition(),true)) ;
+			mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(0,true)) ;
 			refresh() ;
 		}
 		else scrollToNextMatch() ;

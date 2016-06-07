@@ -19,6 +19,7 @@
 package com.xdevl.logviewer.ui;
 
 import android.graphics.Color;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -31,15 +32,15 @@ import com.xdevl.logviewer.R;
 import com.xdevl.logviewer.bean.Log;
 import com.xdevl.logviewer.model.LogReader;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
+import java.util.LinkedList;
 
 public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder> implements LogReader.OnLogParsedListener
 {
 	public final int mId ;
 	private final int mSize ;
-	private List<Log> mAllLogs, mFilteredLogs ;
+	private final LinkedList<Log> mAllLogs=new LinkedList<>(), mFilteredLogs=new LinkedList<>() ;
+	private final Log mEmptyLog=new Log(Log.Severity.INFO,"") ;
 	private EnumSet<Log.Severity> mFilters=EnumSet.allOf(Log.Severity.class) ;
 	private String mSearch ;
 
@@ -80,7 +81,7 @@ public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder> impl
 
 		private void setTextViewColor(int colorRes)
 		{
-			mContent.setTextColor(mContent.getContext().getResources().getColor(colorRes)) ;
+			mContent.setTextColor(ContextCompat.getColor(mContent.getContext(),colorRes)) ;
 		}
 	}
 
@@ -88,21 +89,19 @@ public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder> impl
 	{
 		mId=id ;
 		mSize=size ;
-		mAllLogs=new ArrayList<>() ;
-		mFilteredLogs=new ArrayList<>() ;
 	}
 	
 	@Override
 	public int getItemCount()
 	{
-		return mFilteredLogs.size() ;
+		return mFilteredLogs.size()+1 ;
 	}
 
 	@Override
 	public void onBindViewHolder(ViewHolder holder, int position)
 	{
-		Log logEntry=mFilteredLogs.get(position) ;
-		holder.setLog(logEntry,mSearch) ;
+		Log log=position>0?mFilteredLogs.get(position-1):mEmptyLog ;
+		holder.setLog(log,mSearch) ;
 	}
 
 	@Override
@@ -116,16 +115,16 @@ public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder> impl
 	public void onLogParsed(Log log)
 	{
 		log.setMatch(mSearch) ;
-		mAllLogs.add(log) ;
+		mAllLogs.addFirst(log) ;
 		if(isFiltered(log))
 		{
-			mFilteredLogs.add(log);
-			notifyItemInserted(mFilteredLogs.size()-1);
+			mFilteredLogs.addFirst(log);
+			notifyItemInserted(1);
 		}
-		if(mAllLogs.size()>mSize && isFiltered(mAllLogs.remove(0)))
+		if(mAllLogs.size()>mSize && isFiltered(mAllLogs.removeLast()))
 		{
-			mFilteredLogs.remove(0) ;
-			notifyItemRemoved(0) ;
+			mFilteredLogs.remove(mFilteredLogs.removeLast()) ;
+			notifyItemRemoved(mFilteredLogs.size()) ;
 		}
 	}
 
@@ -165,16 +164,16 @@ public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder> impl
 		if(mFilteredLogs.isEmpty())
 			return 0 ;
 		else if(mSearch==null)
-			return next?mFilteredLogs.size()-1:0 ;
+			return next?0:mFilteredLogs.size() ;
 
-		int step=next?1:-1, i=position ;
+		int step=next?-1:1, i=position ;
 		do {
 			i+=step ;
-			if(i>=mFilteredLogs.size())
-				i=0 ;
-			else if(i<0)
-				i=mFilteredLogs.size()-1 ;
-		} while(!mFilteredLogs.get(i).mMatch && i!=position) ;
+			if(i>mFilteredLogs.size())
+				i=1 ;
+			else if(i<1)
+				i=mFilteredLogs.size() ;
+		} while(!mFilteredLogs.get(i-1).mMatch && i!=position) ;
 		return i ;
 	}
 }
