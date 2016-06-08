@@ -49,6 +49,7 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 	private RecyclerView mRecyclerView ;
 	private TextView mEmptyView ;
 	private boolean mFilters[]=new boolean[Log.Severity.values().length] ;
+	private SearchView mSearchView ;
 
 	public static FragmentLogs createFragment(String type)
 	{
@@ -139,10 +140,10 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 						.setPositiveButton(android.R.string.ok,this).create().show() ;
 				break ;
 			case R.id.action_search:
-				SearchView searchView=(SearchView)MenuItemCompat.getActionView(item) ;
-				searchView.setOnQueryTextListener(this) ;
+				mSearchView=(SearchView)MenuItemCompat.getActionView(item) ;
+				mSearchView.setOnQueryTextListener(this) ;
 				MenuItemCompat.setOnActionExpandListener(item,this) ;
-				searchView.setImeOptions(EditorInfo.IME_ACTION_SEARCH) ;
+				mSearchView.setImeOptions(EditorInfo.IME_ACTION_SEARCH) ;
 				break ;
 			default:
 				return super.onOptionsItemSelected(item) ;
@@ -192,7 +193,7 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 			mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(0,true)) ;
 			refresh() ;
 		}
-		else scrollToNextMatch() ;
+		mSearchView.clearFocus() ;
 		return true ;
 	}
 
