@@ -153,14 +153,14 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 
 	public void scrollToNextMatch()
 	{
-		mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(
+		mRecyclerView.scrollToPosition(mAdapter.getMatchingPosition(
 				mLayoutManager.findFirstCompletelyVisibleItemPosition(),true)) ;
 		refresh() ;
 	}
 
 	public void scrollToPreviousMatch()
 	{
-		mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(
+		mRecyclerView.scrollToPosition(mAdapter.getMatchingPosition(
 				mLayoutManager.findLastCompletelyVisibleItemPosition(),false)) ;
 		refresh() ;
 	}
@@ -190,7 +190,7 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 	{
 		if(mAdapter.search(query))
 		{
-			mRecyclerView.scrollToPosition(mAdapter.getNextMatchingPosition(0,true)) ;
+			mRecyclerView.scrollToPosition(mAdapter.getMatchingPosition(0,true)) ;
 			refresh() ;
 		}
 		mSearchView.clearFocus() ;

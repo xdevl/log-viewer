@@ -159,22 +159,28 @@ public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder> impl
 		return true ;
 	}
 
-	public int getNextMatchingPosition(int position, boolean next)
+	public int getMatchingPosition(int position, boolean next)
 	{
 		if(mFilteredLogs.isEmpty())
 			return 0 ;
 		else if(mSearch==null)
 			return next?0:mFilteredLogs.size() ;
 
-		int step=next?-1:1, i=position ;
-		do {
-			i+=step ;
-			if(i>mFilteredLogs.size())
-				i=1 ;
-			else if(i<1)
-				i=mFilteredLogs.size() ;
-		} while(!mFilteredLogs.get(i-1).mMatch && i!=position) ;
-		return i ;
+		int index=position ;
+		for(int i=0;i<mFilteredLogs.size();++i)
+		{
+			index+=next?-1:1 ;
+			if(index>mFilteredLogs.size())
+				index=1 ;
+			else if(index<1)
+				index=mFilteredLogs.size() ;
+
+			if(mFilteredLogs.get(index-1).mMatch)
+				return index ;
+		}
+
+		// There is no log matching
+		return position ;
 	}
 }
 	
