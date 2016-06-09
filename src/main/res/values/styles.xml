@@ -34,11 +34,11 @@
     <!-- Application theme. -->
     <style name="AppTheme" parent="AppBaseTheme">
         <item name="searchViewStyle">@style/SearchView</item>
+        <item name="colorPrimary">?attr/colorAccent</item>
     </style>
 
-    <style name="ToolBar" parent="ThemeOverlay.AppCompat.Dark">
-        <item name="android:background">?attr/colorAccent</item>
-    </style>
+    <style name="ToolBar" parent="ThemeOverlay.AppCompat.Dark"></style>
+    <style name="Popup" parent="ThemeOverlay.AppCompat.Light"></style>
 
     <style name="SearchView" parent="Widget.AppCompat.SearchView.ActionBar">
         <item name="android:maxWidth">9999dp</item>
