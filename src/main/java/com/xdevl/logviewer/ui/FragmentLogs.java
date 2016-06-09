@@ -118,6 +118,7 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 	{
 		super.onCreateOptionsMenu(menu,inflater) ;
 		inflater.inflate(R.menu.logs,menu) ;
+		((Activity)getActivity()).tintMenuIcons(menu) ;
 	}
 
 	@Override

@@ -18,15 +18,22 @@
  */
 package com.xdevl.logviewer.ui;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.TypedValue;
+import android.view.Menu;
 import android.view.MenuItem;
 import com.xdevl.logviewer.R;
 
 public class Activity extends AppCompatActivity
 {
+	private int mMenuIconTint ;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -35,6 +42,10 @@ public class Activity extends AppCompatActivity
 
 		Toolbar toolBar=(Toolbar)findViewById(R.id.tool_bar) ;
 		setSupportActionBar(toolBar) ;
+
+		TypedValue typedValue=new TypedValue() ;
+		toolBar.getContext().getTheme().resolveAttribute(android.R.attr.textColorSecondary,typedValue,true) ;
+		mMenuIconTint=ContextCompat.getColor(toolBar.getContext(),typedValue.resourceId) ;
 
 		if(savedInstanceState==null)
 			getSupportFragmentManager().beginTransaction().add(R.id.content,new FragmentCards()).commit() ;
@@ -77,5 +88,15 @@ public class Activity extends AppCompatActivity
 	{
 		getSupportFragmentManager().beginTransaction().
 				replace(R.id.content, fragment).addToBackStack(null).commit() ;
+	}
+
+	public void tintMenuIcons(Menu menu)
+	{
+		for(int i=0;i<menu.size() && mMenuIconTint!=0;++i)
+		{
+			Drawable icon=menu.getItem(i).getIcon() ;
+			if(icon!=null)
+				DrawableCompat.setTint(DrawableCompat.wrap(icon),mMenuIconTint) ;
+		}
 	}
 }
