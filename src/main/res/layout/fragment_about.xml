@@ -37,7 +37,7 @@
 		android:textAppearance="?android:attr/textAppearanceLarge"
 		android:textStyle="bold"
 		android:textColor="?attr/colorAccent"
-		android:layout_marginBottom="@dimen/drawable_margin" />
+		android:layout_marginBottom="@dimen/content_margin" />
 
 	<TextView
 		android:id="@+id/app_version"
