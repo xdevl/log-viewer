@@ -19,8 +19,8 @@
 -->
 <resources>
 
-    <item name="info" type="color">#ff669900</item>
-    <item name="debug" type="color">#ff0099cc</item>
-    <item name="warning" type="color">#ffff8800</item>
-    <item name="error" type="color">#ffcc0000</item>
+    <item name="info" type="color">#669900</item>
+    <item name="debug" type="color">#757575</item>
+    <item name="warning" type="color">#ff8800</item>
+    <item name="error" type="color">#cc0000</item>
 </resources>
