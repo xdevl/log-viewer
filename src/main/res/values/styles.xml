@@ -34,9 +34,9 @@
     <!-- Application theme. -->
     <style name="AppTheme" parent="AppBaseTheme">
         <item name="searchViewStyle">@style/SearchView</item>
-        <item name="colorAccent">#558B2F</item>
+        <item name="colorAccent">#388E3C</item>
         <item name="colorPrimary">?attr/colorAccent</item>
-        <item name="colorPrimaryDark">#33691E</item>
+        <item name="colorPrimaryDark">#1B5E20</item>
     </style>
 
     <style name="ToolBar" parent="ThemeOverlay.AppCompat.Dark"></style>
