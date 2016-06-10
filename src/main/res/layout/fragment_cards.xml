@@ -22,5 +22,5 @@
 		android:id="@+id/cards"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:textAppearance="?android:attr/textAppearanceSmall"
-		android:scrollbars="vertical" />
+		android:scrollbars="vertical"
+		android:layout_marginTop="@dimen/list_item_margin" />
