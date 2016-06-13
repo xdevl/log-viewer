@@ -21,13 +21,31 @@ package com.xdevl.logviewer.model;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.util.Log;
+import com.xdevl.logviewer.R;
 import com.xdevl.logviewer.bean.ProcessInputStream;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class Model
 {
+    private static final int IO_BUFFER_SIZE=64*1024 ;
+
+    private static void copy(OutputStream output, InputStream input) throws IOException
+    {
+        try {
+            byte[] buffer=new byte[IO_BUFFER_SIZE] ;
+            int size ;
+            while((size=input.read(buffer))>=0)
+                output.write(buffer,0,size) ;
+            input.close() ;
+        } finally {
+            try { input.close(); } catch(IOException e) {}
+        }
+    }
+
     public static InputStream runCommand(boolean endless, String ...args) throws IOException
     {
         ProcessBuilder builder=new ProcessBuilder(args) ;
@@ -47,5 +65,33 @@ public class Model
     {
         return context.getPackageManager().checkPermission(Manifest.permission.READ_LOGS,
                 context.getPackageName())==PackageManager.PERMISSION_GRANTED ;
+    }
+
+    public static void zipLogs(Context context, OutputStream outputStream)
+    {
+        ZipOutputStream zipOutputStream=new ZipOutputStream(outputStream) ;
+        try
+        {
+            try {
+                zipOutputStream.putNextEntry(new ZipEntry("logcat.txt")) ;
+                String cmd[]={"logcat","-d","-v","time"} ;
+                if(Model.hasReadLogsPermission(context))
+                    Model.copy(zipOutputStream,Model.runCommand(false,cmd)) ;
+                else Model.copy(zipOutputStream,Model.runRootCommand(false,cmd)) ;
+                zipOutputStream.closeEntry() ;
+            } catch(IOException e) {
+                Log.e(context.getString(R.string.adb_tag),e.getMessage()) ;
+            }
+            try {
+                zipOutputStream.putNextEntry(new ZipEntry("dmesg.txt")) ;
+                Model.copy(zipOutputStream,Model.runRootCommand(false,"dmesg")) ;
+                zipOutputStream.closeEntry() ;
+                zipOutputStream.close() ;
+            } catch(IOException e) {
+                Log.e(context.getString(R.string.adb_tag),e.getMessage()) ;
+            }
+        } finally {
+            try { zipOutputStream.close(); } catch(IOException e) {}
+        }
     }
 }

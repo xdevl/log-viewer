@@ -18,16 +18,19 @@
  */
 package com.xdevl.logviewer.ui;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.util.Log;
+import android.view.*;
 import com.xdevl.logviewer.R;
 import com.xdevl.logviewer.bean.Card;
+import com.xdevl.logviewer.model.LogProvider;
 
 import java.util.Arrays;
 
@@ -43,6 +46,7 @@ public class FragmentCards extends Fragment implements AdapterCard.OnCardSelecte
 	{
 		View view=inflater.inflate(R.layout.fragment_cards,container,false) ;
 		((Activity)getActivity()).setTitle(getString(R.string.app_name),false) ;
+		setHasOptionsMenu(true) ;
 		RecyclerView recyclerView=findViewById(view,R.id.cards) ;
 		recyclerView.setLayoutManager(new LinearLayoutManager(getActivity())) ;
 		recyclerView.setAdapter(new AdapterCard(getActivity(),this,Arrays.asList(
@@ -52,6 +56,35 @@ public class FragmentCards extends Fragment implements AdapterCard.OnCardSelecte
 		))) ;
 
 		return view ;
+	}
+
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater)
+	{
+		super.onCreateOptionsMenu(menu,inflater) ;
+		inflater.inflate(R.menu.cards,menu) ;
+		((Activity)getActivity()).tintMenuIcons(menu) ;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+		switch(item.getItemId())
+		{
+			case R.id.action_share:
+				Intent intent=new Intent(Intent.ACTION_SEND) ;
+				intent.putExtra(Intent.EXTRA_STREAM,Uri.parse("content://"+LogProvider.AUTHORITY+"/")) ;
+				intent.setType(LogProvider.ZIP_MIME_TYPE) ;
+				try {
+					startActivity(intent) ;
+				} catch(ActivityNotFoundException e) {
+					Log.e(getString(R.string.adb_tag),e.getMessage()) ;
+				}
+				break ;
+			default:
+				return super.onOptionsItemSelected(item) ;
+		}
+		return true ;
 	}
 
 	protected <T> T findViewById(View view, int id)

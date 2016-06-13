@@ -54,7 +54,8 @@ generate("ic_action_",24,[
 	"search",
 	"up",
 	"down",
-	"filter"])
+	"filter",
+	"share"])
 
 # List item icons
 generate("ic_",40,[
