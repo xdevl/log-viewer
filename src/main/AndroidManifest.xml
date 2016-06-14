@@ -33,7 +33,8 @@
         <provider
             android:name="com.xdevl.logviewer.model.LogProvider"
             android:authorities="com.xdevl.logprovider"
-            android:exported="true">
+            android:exported="false"
+            android:grantUriPermissions="true">
         </provider>
     </application>
 

@@ -74,6 +74,7 @@ public class FragmentCards extends Fragment implements AdapterCard.OnCardSelecte
 			case R.id.action_share:
 				Intent intent=new Intent(Intent.ACTION_SEND) ;
 				intent.putExtra(Intent.EXTRA_STREAM,Uri.parse("content://"+LogProvider.AUTHORITY+"/")) ;
+				intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) ;
 				intent.setType(LogProvider.ZIP_MIME_TYPE) ;
 				try {
 					startActivity(intent) ;
