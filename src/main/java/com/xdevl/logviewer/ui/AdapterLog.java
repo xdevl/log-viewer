@@ -33,6 +33,7 @@ import com.xdevl.logviewer.bean.Log;
 import com.xdevl.logviewer.model.LogReader;
 
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder> implements LogReader.OnLogParsedListener
@@ -112,20 +113,27 @@ public class AdapterLog extends RecyclerView.Adapter<AdapterLog.ViewHolder> impl
 	}
 
 	@Override
-	public void onLogParsed(Log log)
+	public void onLogParsed(Iterator<Log> logs)
 	{
-		log.setMatch(mSearch) ;
-		mAllLogs.addFirst(log) ;
-		if(isFiltered(log))
+		int added=0, removed=0 ;
+		while(logs.hasNext())
 		{
-			mFilteredLogs.addFirst(log);
-			notifyItemInserted(1);
+			Log log=logs.next() ;
+			log.setMatch(mSearch) ;
+			mAllLogs.addFirst(log) ;
+			if(isFiltered(log))
+			{
+				mFilteredLogs.addFirst(log) ;
+				++added ;
+			}
+			if(mAllLogs.size()>mSize && isFiltered(mAllLogs.removeLast()))
+			{
+				mFilteredLogs.removeLast() ;
+				++removed ;
+			}
 		}
-		if(mAllLogs.size()>mSize && isFiltered(mAllLogs.removeLast()))
-		{
-			mFilteredLogs.remove(mFilteredLogs.removeLast()) ;
-			notifyItemRemoved(mFilteredLogs.size()) ;
-		}
+		notifyItemRangeInserted(1,added) ;
+		notifyItemRangeRemoved(mFilteredLogs.size(),removed) ;
 	}
 
 	protected boolean isFiltered(Log log)

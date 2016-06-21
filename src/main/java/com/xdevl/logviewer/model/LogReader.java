@@ -24,12 +24,16 @@ import android.os.Looper;
 import com.xdevl.logviewer.bean.Log;
 
 import java.io.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
-public abstract class LogReader implements Runnable
+public abstract class LogReader implements Runnable, Iterator<Log>
 {
     public interface OnLogParsedListener
     {
-        void onLogParsed(Log log) ;
+        void onLogParsed(Iterator<Log> logs) ;
     }
 
     public interface OnErrorListener
@@ -38,21 +42,26 @@ public abstract class LogReader implements Runnable
     }
 
     protected static final Handler sHandler=new Handler(Looper.getMainLooper()) ;
+    private static final int QUEUE_SIZE=1024 ;
 
     public abstract String getTitle() ;
     protected abstract InputStream streamLogs() throws IOException ;
     protected abstract Log parse(String line) ;
 
     protected final Context mContext ;
+    private final BlockingQueue<Log> mQueue ;
     private volatile BufferedReader mReader ;
-    protected final OnLogParsedListener mOnLogParsedListener ;
+    private final OnLogParsedListener mOnLogParsedListener ;
     private volatile OnErrorListener mOnErrorListener ;
     private volatile Exception mException ;
+    private final Thread mThread ;
 
     public LogReader(Context context, OnLogParsedListener onLogParsedListener)
     {
         mContext=context ;
+        mQueue=new ArrayBlockingQueue<>(QUEUE_SIZE) ;
         mOnLogParsedListener=onLogParsedListener ;
+        mThread=new Thread(this) ;
     }
 
     public final void start()
@@ -63,19 +72,30 @@ public abstract class LogReader implements Runnable
             notify(e) ;
             mReader=new BufferedReader(new StringReader("")) ;
         }
-        new Thread(this).start() ;
+        mThread.start() ;
     }
 
     protected final void notify(final Log log)
     {
         if(Thread.currentThread()==sHandler.getLooper().getThread())
-            mOnLogParsedListener.onLogParsed(log) ;
-        else sHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                mOnLogParsedListener.onLogParsed(log) ;
+            mOnLogParsedListener.onLogParsed(Arrays.asList(log).iterator()) ;
+        else
+        {
+            try {
+                mQueue.put(log) ;
+                // If there was already logs in the queue don't schedule the callback again
+                // it already is
+                if(mQueue.size()<2)
+                    sHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            mOnLogParsedListener.onLogParsed(LogReader.this) ;
+                        }
+                    }) ;
+            } catch(InterruptedException e) {
+                // The reader has been stopped, just exit
             }
-        }) ;
+        }
     }
 
     protected final void notify(final Exception exception)
@@ -109,10 +129,15 @@ public abstract class LogReader implements Runnable
         else new Thread(new Runnable() {
             @Override
             public void run() {
-                try { mReader.close(); } catch(IOException e) {}
+                try { mReader.close();mThread.interrupt(); } catch(IOException e) {}
             }
         }).start() ;
     }
+
+    /**
+     * Subclasses can overload this method to free resources when the reader has stopped.
+     */
+    protected void onStopped() {}
 
     @Override
     public final void run()
@@ -134,8 +159,21 @@ public abstract class LogReader implements Runnable
         }) ;
     }
 
-    /**
-     * Subclasses can overload this method to free resources when the reader has stopped.
-     */
-    protected void onStopped() {}
+    @Override
+    public final Log next()
+    {
+        return mQueue.poll() ;
+    }
+
+    @Override
+    public final boolean hasNext()
+    {
+        return !mQueue.isEmpty() ;
+    }
+
+    @Override
+    public final void remove()
+    {
+        throw new UnsupportedOperationException() ;
+    }
 }
