@@ -39,11 +39,12 @@ public abstract class LogReader implements Runnable
 
     protected static final Handler sHandler=new Handler(Looper.getMainLooper()) ;
 
+    public abstract String getTitle() ;
     protected abstract InputStream streamLogs() throws IOException ;
     protected abstract Log parse(String line) ;
 
     protected final Context mContext ;
-    private final BufferedReader mReader ;
+    private volatile BufferedReader mReader ;
     protected final OnLogParsedListener mOnLogParsedListener ;
     private volatile OnErrorListener mOnErrorListener ;
     private volatile Exception mException ;
@@ -51,54 +52,61 @@ public abstract class LogReader implements Runnable
     public LogReader(Context context, OnLogParsedListener onLogParsedListener)
     {
         mContext=context ;
-        mReader=streamLogsWrapper() ;
         mOnLogParsedListener=onLogParsedListener ;
     }
 
-    // Wrapper function to initialize the buffered reader
-    private BufferedReader streamLogsWrapper()
+    public final void start()
     {
         try {
-            return new BufferedReader(new InputStreamReader(streamLogs())) ;
+            mReader=new BufferedReader(new InputStreamReader(streamLogs())) ;
         } catch(IOException e) {
             notify(e) ;
-            return new BufferedReader(new StringReader("")) ;
+            mReader=new BufferedReader(new StringReader("")) ;
         }
+        new Thread(this).start() ;
     }
 
-    protected void notify(final Log log)
+    protected final void notify(final Log log)
     {
-        sHandler.post(new Runnable() {
+        if(Thread.currentThread()==sHandler.getLooper().getThread())
+            mOnLogParsedListener.onLogParsed(log) ;
+        else sHandler.post(new Runnable() {
             @Override
             public void run() {
-                mOnLogParsedListener.onLogParsed(log); ;
+                mOnLogParsedListener.onLogParsed(log) ;
             }
         }) ;
     }
 
-    protected void notify(final Exception exception)
+    protected final void notify(final Exception exception)
     {
         mException=exception ;
         if(mOnErrorListener!=null)
-            sHandler.post(new Runnable() {
+        {
+            if(Thread.currentThread()==sHandler.getLooper().getThread())
+                mOnErrorListener.onError(mException) ;
+            else sHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    mOnErrorListener.onError(mException) ;
+                    mOnErrorListener.onError(mException);
                 }
-            }) ;
+            });
+        }
     }
 
-    public void setOnErrorListener(OnErrorListener onErrorListener)
+    public final void setOnErrorListener(OnErrorListener onErrorListener)
     {
         mOnErrorListener=onErrorListener ;
         if(mException!=null)
             notify(mException) ;
     }
 
-    public void stop()
+    public final void stop()
     {
+        if(Thread.currentThread()!=sHandler.getLooper().getThread())
+            try { mReader.close(); } catch(IOException e) {}
         // Closing the reader can take a bit of time if it is attached to a process input stream
-        new Thread(new Runnable() {
+        else new Thread(new Runnable() {
             @Override
             public void run() {
                 try { mReader.close(); } catch(IOException e) {}
@@ -107,7 +115,7 @@ public abstract class LogReader implements Runnable
     }
 
     @Override
-    public void run()
+    public final void run()
     {
         try {
             String line;
@@ -118,5 +126,16 @@ public abstract class LogReader implements Runnable
             stop() ;
             notify(e) ;
         }
+        sHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                onStopped() ;
+            }
+        }) ;
     }
+
+    /**
+     * Subclasses can overload this method to free resources when the reader has stopped.
+     */
+    protected void onStopped() {}
 }

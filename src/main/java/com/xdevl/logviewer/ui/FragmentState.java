@@ -19,6 +19,7 @@
 package com.xdevl.logviewer.ui;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.CoordinatorLayout;
@@ -27,10 +28,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.text.Html;
 import android.view.View;
-import com.xdevl.logviewer.model.DmesgReader;
-import com.xdevl.logviewer.model.ExportRunnable;
-import com.xdevl.logviewer.model.LogReader;
-import com.xdevl.logviewer.model.LogcatReader;
+import com.xdevl.logviewer.model.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,10 +48,23 @@ public class FragmentState extends Fragment implements ExportRunnable.Notifier
 
     public enum AdapterType
     {
-        LOGCAT, DMESG
+        LOGCAT, DMESG, URI
     }
 
     private static final String TAG=FragmentState.class.getName() ;
+
+    private static LogReader getLogReader(Context context, LogReader.OnLogParsedListener onLogParsedListener, AdapterType type, Uri uri)
+    {
+        switch(type)
+        {
+            case DMESG:
+                return new DmesgReader(context,onLogParsedListener) ;
+            case URI:
+                return new UriReader(context,onLogParsedListener,uri) ;
+            default:
+                return new LogcatReader(context,onLogParsedListener) ;
+        }
+    }
 
     private int mCount=1 ;
     private Map<Integer,AdapterLog> mAdapters=new HashMap<>();
@@ -83,19 +94,24 @@ public class FragmentState extends Fragment implements ExportRunnable.Notifier
         }
     }
 
-    public AdapterLog getAdapter(Context context, AdapterType type)
+    public AdapterLog getAdapter(Context context, AdapterType type, Uri uri)
     {
         AdapterLog adapter=new AdapterLog(mCount++,20480) ;
         mAdapters.put(adapter.mId,adapter) ;
-        LogReader reader=type==AdapterType.LOGCAT?new LogcatReader(context,adapter):new DmesgReader(context,adapter) ;
+        LogReader reader=getLogReader(context,adapter,type,uri) ;
         mReaders.put(adapter.mId,reader) ;
-        new Thread(reader).start() ;
+        reader.start() ;
         return adapter ;
     }
 
     public AdapterLog getAdapter(int id)
     {
         return mAdapters.get(id) ;
+    }
+
+    public String getTitle(int id)
+    {
+        return mReaders.get(id).getTitle() ;
     }
 
     public void registerErrorListener(int id, LogReader.OnErrorListener onErrorListener)

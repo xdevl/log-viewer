@@ -19,6 +19,7 @@
 package com.xdevl.logviewer.ui;
 
 import android.content.DialogInterface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -40,6 +41,7 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 		SearchView.OnQueryTextListener, MenuItemCompat.OnActionExpandListener
 {
 	private static final String ARGUMENT_TYPE=FragmentLogs.class.getName()+".ARGUMENT_TYPE" ;
+	private static final String ARGUMENT_URI=FragmentLogs.class.getName()+".ARGUMENT_URI" ;
 	private static final String ADAPTER_ID=FragmentLogs.class.getName()+".ADAPTER_ID" ;
 
 	private FragmentState mFragmentState ;
@@ -51,10 +53,11 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 	private boolean mFilters[]=new boolean[Log.Severity.values().length] ;
 	private SearchView mSearchView ;
 
-	public static FragmentLogs createFragment(String type)
+	public static FragmentLogs createFragment(String type, Uri uri)
 	{
 		Bundle bundle=new Bundle() ;
 		bundle.putString(ARGUMENT_TYPE,type) ;
+		bundle.putParcelable(ARGUMENT_URI,uri) ;
 		FragmentLogs fragment=new FragmentLogs() ;
 		fragment.setArguments(bundle) ;
 		return fragment ;
@@ -65,11 +68,10 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 	public View onCreateView(LayoutInflater inflater,@Nullable ViewGroup container,@Nullable Bundle savedInstanceState)
 	{
 		View view=inflater.inflate(R.layout.fragment_logs,null) ;
-		FragmentState.AdapterType type=FragmentState.AdapterType.valueOf(getArguments().getString(ARGUMENT_TYPE)) ;
-		((Activity)getActivity()).setTitle(getString(type==FragmentState.AdapterType.LOGCAT?
-				R.string.title_logcat:R.string.title_dmesg),true) ;
+		Bundle arguments=getArguments()!=null?getArguments():new Bundle() ;
 		setHasOptionsMenu(true) ;
 		mFragmentState=FragmentState.getInstance(getFragmentManager()) ;
+		mEmptyView=(TextView)view.findViewById(R.id.empty_view) ;
 		mRecyclerView=(RecyclerView)view.findViewById(R.id.logs) ;
 		mLayoutManager=new LinearLayoutManager(getActivity(),LinearLayoutManager.VERTICAL,true) ;
 		mRecyclerView.setLayoutManager(mLayoutManager) ;
@@ -78,11 +80,13 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 
 		if(savedInstanceState!=null && savedInstanceState.containsKey(ADAPTER_ID))
 			mAdapter=mFragmentState.getAdapter(savedInstanceState.getInt(ADAPTER_ID)) ;
-		else mAdapter=mFragmentState.getAdapter(getContext(),type) ;
+		else mAdapter=mFragmentState.getAdapter(getContext(),FragmentState.AdapterType.valueOf(
+				arguments.getString(ARGUMENT_TYPE)),(Uri)arguments.getParcelable(ARGUMENT_URI)) ;
+
 		mRecyclerView.setAdapter(mAdapter) ;
 		mFragmentState.registerErrorListener(mAdapter.mId,this) ;
 
-		mEmptyView=(TextView)view.findViewById(R.id.empty_view) ;
+		((Activity)getActivity()).setTitle(mFragmentState.getTitle(mAdapter.mId),true) ;
 
 		return view;
 	}

@@ -56,11 +56,16 @@ public class Activity extends AppCompatActivity
 		mMenuIconTint=ContextCompat.getColor(toolBar.getContext(),typedValue.resourceId) ;
 
 		if(savedInstanceState==null)
-			getSupportFragmentManager().beginTransaction().add(R.id.content,new FragmentCards()).commit() ;
+		{
+			Intent intent=getIntent() ;
+			if(Intent.ACTION_VIEW.equals(intent.getAction()))
+				getSupportFragmentManager().beginTransaction().add(R.id.content,FragmentLogs.createFragment(
+						FragmentState.AdapterType.URI.name(),intent.getData())).commit() ;
+			else getSupportFragmentManager().beginTransaction().add(R.id.content,new FragmentCards()).commit() ;
 
-		Intent intent=getIntent() ;
-		if(Intent.ACTION_SEND.equals(intent.getAction()) && savedInstanceState==null)
-			new Thread(new ExportRunnable(getApplicationContext(),(Uri)intent.getParcelableExtra(Intent.EXTRA_STREAM),mFragmentState)).start() ;
+			if(Intent.ACTION_SEND.equals(intent.getAction()))
+				new Thread(new ExportRunnable(getApplicationContext(),(Uri)intent.getParcelableExtra(Intent.EXTRA_STREAM),mFragmentState)).start() ;
+		}
 	}
 
 	@Override
@@ -93,7 +98,7 @@ public class Activity extends AppCompatActivity
 	{
 		if(getSupportFragmentManager().getBackStackEntryCount()>0)
 			getSupportFragmentManager().popBackStack() ;
-		else moveTaskToBack(true) ;
+		else finish() ;
 	}
 
 	public void setTitle(String title,boolean backButton)

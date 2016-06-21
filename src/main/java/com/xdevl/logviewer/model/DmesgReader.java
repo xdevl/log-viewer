@@ -19,6 +19,7 @@
 package com.xdevl.logviewer.model;
 
 import android.content.Context;
+import com.xdevl.logviewer.R;
 import com.xdevl.logviewer.bean.Log;
 
 import java.io.IOException;
@@ -29,6 +30,12 @@ public class DmesgReader extends LogReader
     public DmesgReader(Context context, OnLogParsedListener onLogParsedListener)
     {
         super(context,onLogParsedListener) ;
+    }
+
+    @Override
+    public String getTitle()
+    {
+        return mContext.getString(R.string.title_dmesg) ;
     }
 
     @Override
