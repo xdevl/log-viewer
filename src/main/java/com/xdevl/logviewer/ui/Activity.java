@@ -18,8 +18,11 @@
  */
 package com.xdevl.logviewer.ui;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
@@ -29,9 +32,11 @@ import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import com.xdevl.logviewer.R;
+import com.xdevl.logviewer.model.ExportRunnable;
 
 public class Activity extends AppCompatActivity
 {
+	private FragmentState mFragmentState ;
 	private int mMenuIconTint ;
 
 	@Override
@@ -43,14 +48,27 @@ public class Activity extends AppCompatActivity
 		Toolbar toolBar=(Toolbar)findViewById(R.id.tool_bar) ;
 		setSupportActionBar(toolBar) ;
 
+		mFragmentState=FragmentState.getInstance(getSupportFragmentManager()) ;
+		mFragmentState.setCoordinatorLayout((CoordinatorLayout)findViewById(R.id.coordinator_layout)) ;
+
 		TypedValue typedValue=new TypedValue() ;
 		toolBar.getContext().getTheme().resolveAttribute(android.R.attr.textColorSecondary,typedValue,true) ;
 		mMenuIconTint=ContextCompat.getColor(toolBar.getContext(),typedValue.resourceId) ;
 
 		if(savedInstanceState==null)
 			getSupportFragmentManager().beginTransaction().add(R.id.content,new FragmentCards()).commit() ;
+
+		Intent intent=getIntent() ;
+		if(Intent.ACTION_SEND.equals(intent.getAction()) && savedInstanceState==null)
+			new Thread(new ExportRunnable(getApplicationContext(),(Uri)intent.getParcelableExtra(Intent.EXTRA_STREAM),mFragmentState)).start() ;
 	}
 
+	@Override
+	protected void onDestroy()
+	{
+		super.onDestroy() ;
+		mFragmentState.setCoordinatorLayout(null) ;
+	}
 
 	@Override
 	public void onBackPressed()

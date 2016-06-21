@@ -21,16 +21,21 @@ package com.xdevl.logviewer.ui;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.text.Html;
+import android.view.View;
 import com.xdevl.logviewer.model.DmesgReader;
+import com.xdevl.logviewer.model.ExportRunnable;
 import com.xdevl.logviewer.model.LogReader;
 import com.xdevl.logviewer.model.LogcatReader;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class FragmentState extends Fragment
+public class FragmentState extends Fragment implements ExportRunnable.Notifier
 {
     public static FragmentState getInstance(FragmentManager fragmentManager)
     {
@@ -53,12 +58,29 @@ public class FragmentState extends Fragment
     private int mCount=1 ;
     private Map<Integer,AdapterLog> mAdapters=new HashMap<>();
     private Map<Integer,LogReader> mReaders=new HashMap<>() ;
+    private CoordinatorLayout mCoordinatorLayout ;
+    private String mNotificationText ;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState) ;
         setRetainInstance(true) ;
+    }
+
+    @Override
+    public void notify(String text)
+    {
+        mNotificationText=text ;
+        if(mCoordinatorLayout!=null)
+        {
+            Snackbar.make(mCoordinatorLayout,Html.fromHtml(text),Snackbar.LENGTH_INDEFINITE).setAction(android.R.string.ok,new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    mNotificationText=null ;
+                }
+            }).show() ;
+        }
     }
 
     public AdapterLog getAdapter(Context context, AdapterType type)
@@ -85,5 +107,12 @@ public class FragmentState extends Fragment
     {
         mAdapters.remove(id) ;
         mReaders.remove(id).stop() ;
+    }
+
+    public void setCoordinatorLayout(CoordinatorLayout coordinatorLayout)
+    {
+        mCoordinatorLayout=coordinatorLayout ;
+        if(mNotificationText!=null)
+            notify(mNotificationText) ;
     }
 }

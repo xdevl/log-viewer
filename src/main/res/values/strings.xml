@@ -34,9 +34,12 @@
     <string name="label_scroll_top">Scroll top</string>
     <string name="label_scroll_bottom">Scroll bottom</string>
     <string name="label_filter">Filtering</string>
+    <string name="label_export_storage">Export to storage</string>
 
     <string name="msg_no_logs">No logs to display</string>
     <string name="msg_root_required">Root permission is required in order to read logs</string>
+    <string name="msg_exported_to"><![CDATA[Exported to: <i>%1s</i>]]></string>
+    <string name="msg_export_failed"><![CDATA[Export failed: <i>%1s</i>]]></string>
     <string name="msg_copyright">%1d</string>
 
     <!-- The order need to match the order enum values declaration in Log.java -->

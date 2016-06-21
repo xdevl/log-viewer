@@ -21,6 +21,7 @@ package com.xdevl.logviewer.model;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Environment;
 import android.util.Log;
 import com.xdevl.logviewer.R;
 import com.xdevl.logviewer.bean.ProcessInputStream;
@@ -92,6 +93,20 @@ public class Model
             }
         } finally {
             try { zipOutputStream.close(); } catch(IOException e) {}
+        }
+    }
+
+    public static String exportToStorage(InputStream inputStream) throws IOException
+    {
+        File exportFile=new File(Environment.getExternalStorageDirectory(),LogProvider.getFileName()) ;
+        OutputStream outputStream=null ;
+        try {
+            outputStream=new FileOutputStream(exportFile) ;
+            Model.copy(outputStream,inputStream) ;
+            outputStream.close() ;
+            return exportFile.getAbsolutePath() ;
+        } finally {
+            if(outputStream!=null) try { outputStream.close(); } catch(IOException e) {}
         }
     }
 }
