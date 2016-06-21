@@ -22,9 +22,7 @@
 	android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-	android:layout_marginTop="@dimen/list_item_margin"
-	android:layout_marginLeft="@dimen/list_item_margin"
-	android:layout_marginRight="@dimen/list_item_margin">
+	android:layout_marginTop="@dimen/list_item_margin">
 
 	<TextView
 			android:id="@+id/content"

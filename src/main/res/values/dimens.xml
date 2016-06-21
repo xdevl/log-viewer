@@ -18,10 +18,11 @@
  along with Log viewer. If not, see <http://www.gnu.org/licenses/>.
 -->
 <resources>
-
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="list_item_margin">8dp</dimen>
     <dimen name="content_margin">16dp</dimen>
     <!-- Margin between two block of text -->
     <dimen name="paragraph_margin">32dip</dimen>
-
 </resources>
