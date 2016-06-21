@@ -40,6 +40,8 @@
     <string name="msg_root_required">Root permission is required in order to read logs</string>
     <string name="msg_exported_to"><![CDATA[Exported to: <i>%1s</i>]]></string>
     <string name="msg_export_failed"><![CDATA[Export failed: <i>%1s</i>]]></string>
+    <string name="msg_license">This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GNU General Public License v3</a> for more details.</string>
     <string name="msg_copyright">%1d</string>
 
     <!-- The order need to match the order enum values declaration in Log.java -->
