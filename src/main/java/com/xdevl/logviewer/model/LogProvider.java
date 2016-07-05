@@ -44,7 +44,7 @@ public class LogProvider extends ContentProvider
         return "logs - "+Build.MODEL+" - "+DATE_FORMAT.format(new Date())+".zip" ;
     }
 
-    private static final DateFormat DATE_FORMAT=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ") ;
+    private static final DateFormat DATE_FORMAT=new SimpleDateFormat("yyyyMMdd'_'HHmmss") ;
 
     private static final String[] COLUMNS={
             OpenableColumns.DISPLAY_NAME,
