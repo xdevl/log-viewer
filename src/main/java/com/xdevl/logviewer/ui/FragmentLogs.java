@@ -80,8 +80,10 @@ public class FragmentLogs extends Fragment implements LogReader.OnErrorListener,
 
 		if(savedInstanceState!=null && savedInstanceState.containsKey(ADAPTER_ID))
 			mAdapter=mFragmentState.getAdapter(savedInstanceState.getInt(ADAPTER_ID)) ;
-		else mAdapter=mFragmentState.getAdapter(getContext(),FragmentState.AdapterType.valueOf(
-				arguments.getString(ARGUMENT_TYPE)),(Uri)arguments.getParcelable(ARGUMENT_URI)) ;
+
+		if(mAdapter==null)
+			mAdapter=mFragmentState.getAdapter(getContext(),FragmentState.AdapterType.valueOf(
+					arguments.getString(ARGUMENT_TYPE)),(Uri)arguments.getParcelable(ARGUMENT_URI)) ;
 
 		mRecyclerView.setAdapter(mAdapter) ;
 		mFragmentState.registerErrorListener(mAdapter.mId,this) ;
