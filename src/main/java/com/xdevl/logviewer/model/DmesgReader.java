@@ -41,7 +41,8 @@ public class DmesgReader extends LogReader
     @Override
     protected InputStream streamLogs() throws IOException
     {
-        return Model.runRootCommand(false,"dmesg") ;
+        String cmd[]={"cat","/proc/kmsg"} ;
+        return Model.runRootCommand(true,cmd) ;
     }
 
     @Override
